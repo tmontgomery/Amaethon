@@ -13,14 +13,25 @@ public class AuctionHouse implements Model
     private final ArrayList<Auction> auctions = new ArrayList<>();
     private final Long2ObjectHashMap<Bidder> bidders = new Long2ObjectHashMap<>();
 
+    private final Consumer<Auction> onNewAuctionFunc;
+    private final Consumer<Auction> onNewHighBidFunc;
+    private final Consumer<Auction> onAuctionOverFunc;
+
     private long currentTimeInNanos;
 
-    public AuctionHouse()
+    public AuctionHouse(
+        final Consumer<Auction> onNewAuction,
+        final Consumer<Auction> onNewHighBid,
+        final Consumer<Auction> onAuctionOver)
     {
         for (int i = INITIAL_NUMBER_OF_AUCTION_SLOTS - 1; i >= 0; i--)
         {
             auctions.add(new Auction());
         }
+
+        onNewAuctionFunc = onNewAuction;
+        onNewHighBidFunc = onNewHighBid;
+        onAuctionOverFunc = onAuctionOver;
     }
 
     public long currentTimeInNanos()
@@ -32,6 +43,12 @@ public class AuctionHouse implements Model
     {
         currentTimeInNanos = now;
         forEach(onAdvanceTimeFunc);
+    }
+
+    // TODO: use for mocking and testing mostly
+    public Auction auction(final int id)
+    {
+        return auctions.get(id);
     }
 
     public int add(byte[] name, long expiration, long reserveValue)
@@ -55,6 +72,7 @@ public class AuctionHouse implements Model
         }
 
         auctions.get(id).reset(name, expiration, reserveValue);
+        onNewAuctionFunc.accept(auctions.get(id));
 
         return id;
     }
@@ -77,6 +95,11 @@ public class AuctionHouse implements Model
         if (null != auction)
         {
             result = auction.bid(bidderId, value);
+
+            if (result)
+            {
+                onNewHighBidFunc.accept(auction);
+            }
         }
 
         return result;
@@ -107,7 +130,9 @@ public class AuctionHouse implements Model
 
     private void onAdvanceTime(final Auction auction)
     {
-        // TODO: check return value to see if an auction ended
-        auction.onAdvanceTime(currentTimeInNanos);
+        if (auction.onAdvanceTime(currentTimeInNanos) > 0)
+        {
+            onAuctionOverFunc.accept(auction);
+        }
     }
 }
