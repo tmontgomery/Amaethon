@@ -1,0 +1,1 @@
+include 'basic-service', 'solutions:basic-service', 'solutions:activity-feed'
