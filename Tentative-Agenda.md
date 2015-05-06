@@ -6,6 +6,8 @@ Intro to SBE: 9-10am
 Intro to Aeron: 10-11am
 * Break: 10 min
 
+NOTE: could do exercise 1 in 2 parts (1st = Aeron. 2nd = SBE)
+
 Exercise 1: 11-12pm
 * intro to auctions and exercises: 20 min
 * given domain model of an auction system, turn it into a service that listens on an Aeron stream for the following commands:
