@@ -49,6 +49,12 @@ subprojects {
             'sbe.validation.xsd': "${project.projectDir}/src/main/resources/fpl/SimpleBinary1-0.xsd")
         args "${project.projectDir}/src/main/resources/Amaethon-schema.xml"
     }
+
+    task(run, type: JavaExec) {
+        description = "Run exercise"
+        main = 'amaethon.RunExercise'
+        classpath = sourceSets.main.runtimeClasspath
+    }
 }
 
 task wrapper(type: Wrapper) {
