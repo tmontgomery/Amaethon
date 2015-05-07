@@ -16,19 +16,17 @@ public class RunExercise
         final MediaDriver mediaDriver = MediaDriver.launch(ctx.dirsDeleteOnExit(true));
         final AuctionService service = new AuctionService(SUBMISSION_CHANNEL, SUBMISSION_STREAM_ID);
         final Thread serviceThread = new Thread(service);
+        final AuctionHouse house = service.house();
 
         serviceThread.setName("AuctionService");
         serviceThread.start();
 
         try (final AutomatedClient client = new AutomatedClient(SUBMISSION_CHANNEL, SUBMISSION_STREAM_ID))
         {
-            final AuctionHouse house = service.house();
-
             house.addBidder("tmontgomery".getBytes(), 1, 0);
             house.addBidder("mjpt777".getBytes(), 2, 0);
             house.addBidder("RichardWarburton".getBytes(), 3, 0);
 
-            // TODO: add some auctions and do some bids
             client.auction("Star Wars Force Awakens Pre-Pre-Release", 1000000000, "00:00:10");
             client.bid(0, 1, 1000000000 + 1);
             client.auction("Issue #1000", 0, "00:00:05");

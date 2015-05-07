@@ -13,14 +13,14 @@ Exercise 1: 11-12pm
 * given domain model of an auction system, turn it into a service that listens on an Aeron stream for the following commands:
     1. new auction
     1. bid on auction
-* a CLI tool is provided that will send the appropriate commands
 * SBE schemas are provided for the commands
 
 Exercise 2: 1-2pm
-* add activity feed to auction service _and_ CLI tool. Events are:
+* add activity feed to auction service _and_ client tool. Events are:
     1. new auction
     1. new high bid on auction
     1. auction won
+    1. list of active auctions (periodic)
 * SBE schemas are provided for the events on the activity feed
 * break: 10 min
 

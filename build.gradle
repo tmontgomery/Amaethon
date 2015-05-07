@@ -12,7 +12,7 @@ buildscript {
     }
 }
 
-FileCollection sbeJar = files('../simple-binary-encoding/build/libs/sbe-all-1.0.4-RC2-SNAPSHOT.jar')
+FileCollection sbeJar = files('../simple-binary-encoding/build/libs/sbe-all-1.1-RC2-SNAPSHOT.jar')
 
 subprojects {
     apply plugin: 'java'
