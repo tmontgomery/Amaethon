@@ -14,7 +14,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 
-public class AuctionClient
+public class AuctionCliClient
 {
     public static final MessageHeaderEncoder MESSAGE_HEADER_ENCODER = new MessageHeaderEncoder();
     public static final AuctionEncoder AUCTION_ENCODER = new AuctionEncoder();

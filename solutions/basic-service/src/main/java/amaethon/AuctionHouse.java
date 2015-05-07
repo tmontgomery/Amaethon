@@ -51,7 +51,7 @@ public class AuctionHouse implements Model
         return auctions.get(id);
     }
 
-    public int add(byte[] name, long expiration, long reserveValue)
+    public int add(final byte[] name, final int nameLength, final long expiration, final long reserveValue)
     {
         int id = -1;
 
@@ -71,7 +71,7 @@ public class AuctionHouse implements Model
             auctions.add(id, new Auction());
         }
 
-        auctions.get(id).reset(name, expiration, reserveValue);
+        auctions.get(id).reset(name, nameLength, expiration, reserveValue);
         onNewAuctionFunc.accept(auctions.get(id));
 
         return id;

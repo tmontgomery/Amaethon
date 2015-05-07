@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 public interface Model
 {
     // add an auction
-    public int add(final byte[] name, final long expiration, final long reserveValue);
+    public int add(final byte[] name, final int nameLength, final long expiration, final long reserveValue);
     // exercise 3: add a new auction type
     //public long add(final byte[] name, final long expiration, final long price, final long quantity);
 
