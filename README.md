@@ -61,6 +61,15 @@ Once successfully built, the Amaethon exercises can be run
 
     $ ./gradlew :basic-service:run
 
+Running Exercise Solutions
+--------------------------
+
+Once successfully built, the Amaethon solutions to the exercises can be run
+
+    $ ./gradlew :solutions:basic-service:run
+    $ ./gradlew :solutions:activity-feed:run
+    $ ./gradlew :solutions:advanced-service:run
+
 Generating SBE Codecs
 ---------------------
 
