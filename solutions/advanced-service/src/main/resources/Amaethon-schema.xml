@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/1.0"
+                   package="amaethon.generated"
+                   id="1"
+                   version="0"
+                   semanticVersion="5.2"
+                   description="Auction service schema"
+                   byteOrder="littleEndian">
+    <types>
+        <composite name="messageHeader" description="Message identifiers and length of message root">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="templateId" primitiveType="uint16"/>
+            <type name="schemaId" primitiveType="uint16"/>
+            <type name="version" primitiveType="uint16"/>
+        </composite>
+        <composite name="groupSizeEncoding" description="Repeating group dimensions">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="numInGroup" primitiveType="uint16"/>
+        </composite>
+        <composite name="varDataEncoding">
+            <type name="length" primitiveType="uint8"/>
+            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
+        </composite>
+    </types>
+
+    <types>
+        <type name="Price" primitiveType="int64"/>
+
+        <enum name="AuctionType" encodingType="int8">
+            <validValue name="Basic">0</validValue>
+            <validValue name="FixedPrice">1</validValue>
+        </enum>
+    </types>
+
+    <!-- commands -->
+
+    <!-- Remain unchanged -->
+    <sbe:message name="Auction" id="1" description="Adding a new auction to the auction house">
+        <field name="durationInNanos" id="1" type="int64"/>
+        <field name="reserve" id="2" type="Price"/>
+        <data name="name" id="3" type="varDataEncoding"/>
+    </sbe:message>
+
+    <!-- Remain unchanged -->
+    <sbe:message name="Bid" id="2" description="Bidding on an auction in the auction house">
+        <field name="auctionId" id="1" type="int32"/>
+        <field name="bidderId" id="2" type="int64"/>
+        <field name="value" id="3" type="Price"/>
+    </sbe:message>
+
+    <!-- Added a new message type for the new auction type -->
+    <sbe:message name="FixedPriceAuction" id="7" description="Adding a new fixed price auction to the auction house">
+        <field name="durationInNanos" id="1" type="int64"/>
+        <field name="price" id="2" type="Price"/>
+        <field name="quantity" id="3" type="int32"/>
+        <data name="name" id="4" type="varDataEncoding"/>
+    </sbe:message>
+
+    <!-- events -->
+
+    <!-- Modified the event so that they can handle both types of auctions -->
+    <sbe:message name="NewAuction" id="3" description="New auction started">
+        <field name="auctionId" id="1" type="int32"/>
+        <field name="duration" id="2" type="int64"/>
+        <field name="reserveOrPrice" id="3" type="Price"/>
+        <field name="quantity" id="4" type="int32"/>
+        <field name="auctionType" id="5" type="AuctionType"/>
+        <data name="name" id="6" type="varDataEncoding"/>
+    </sbe:message>
+
+    <!-- Keep this event unchanged. Only pertains to basic auctions -->
+    <sbe:message name="NewHighBid" id="4" description="New high bid on auction">
+        <field name="auctionId" id="1" type="int32"/>
+        <field name="highBidderId" id="2" type="int64"/>
+        <field name="highBid" id="3" type="Price"/>
+        <field name="durationLeft" id="4" type="int64"/>
+    </sbe:message>
+
+    <!-- Add a new event that indicates someone won one of the items in a fixed price auction -->
+    <sbe:message name="FixedPriceAuctionUpdate" id="8" description="Bidder won an item with a fixed price">
+        <field name="auctionId" id="1" type="int32"/>
+        <field name="bidderId" id="2" type="int64"/>
+        <field name="durationLeft" id="4" type="int64"/>
+        <field name="quantityLeft" id="3" type="int32"/>
+    </sbe:message>
+
+    <!-- Modified so that it makes sense to be used for both types of auctions -->
+    <sbe:message name="AuctionOver" id="5" description="Auction complete">
+        <field name="auctionId" id="1" type="int32"/>
+        <field name="winningBidderId" id="2" type="int64"/>
+        <field name="winningBid" id="3" type="Price"/>
+        <field name="quantityLeft" id="4" type="int32"/>
+    </sbe:message>
+
+    <!-- Modified so that it makes sense to be used for both types of auctions -->
+    <sbe:message name="AuctionList" id="6" description="List of active Auction">
+        <group id="1" name="activeAuctions">
+            <field name="auctionId" id="2" type="int32"/>
+            <field name="durationLeft" id="3" type="int64"/>
+            <field name="highBidderId" id="4" type="int64"/>
+            <field name="highBid" id="5" type="Price"/>
+            <field name="quantityLeft" id="6" type="int32"/>
+        </group>
+    </sbe:message>
+</sbe:messageSchema>

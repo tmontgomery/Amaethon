@@ -60,10 +60,10 @@ public class AutomatedClient implements AutoCloseable
         auctionEncoder.wrap(buffer, messageHeaderEncoder.size());
 
         messageHeaderEncoder
-            .blockLength(auctionEncoder.sbeBlockLength())
-            .templateId(auctionEncoder.sbeTemplateId())
-            .schemaId(auctionEncoder.sbeSchemaId())
-            .version(auctionEncoder.sbeSchemaVersion());
+            .blockLength(AuctionEncoder.BLOCK_LENGTH)
+            .templateId(AuctionEncoder.TEMPLATE_ID)
+            .schemaId(AuctionEncoder.SCHEMA_ID)
+            .version(AuctionEncoder.SCHEMA_VERSION);
 
         auctionEncoder
             .durationInNanos(durationInNanos)
@@ -87,10 +87,10 @@ public class AutomatedClient implements AutoCloseable
         bidEncoder.wrap(buffer, messageHeaderEncoder.size());
 
         messageHeaderEncoder
-            .blockLength(bidEncoder.sbeBlockLength())
-            .templateId(bidEncoder.sbeTemplateId())
-            .schemaId(bidEncoder.sbeSchemaId())
-            .version(bidEncoder.sbeSchemaVersion());
+            .blockLength(BidEncoder.BLOCK_LENGTH)
+            .templateId(BidEncoder.TEMPLATE_ID)
+            .schemaId(BidEncoder.SCHEMA_ID)
+            .version(BidEncoder.SCHEMA_VERSION);
 
         bidEncoder
             .auctionId(auctionId)

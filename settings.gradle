@@ -1,1 +1,1 @@
-include 'basic-service', 'activity-feed', 'solutions:basic-service', 'solutions:activity-feed'
+include 'basic-service', 'activity-feed', 'solutions:basic-service', 'solutions:activity-feed', 'solutions:advanced-service'

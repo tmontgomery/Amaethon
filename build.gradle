@@ -12,6 +12,7 @@ buildscript {
     }
 }
 
+// assume that SBE is built in a nearby directory
 FileCollection sbeJar = files('../simple-binary-encoding/build/libs/sbe-all-1.1-RC2-SNAPSHOT.jar')
 
 subprojects {

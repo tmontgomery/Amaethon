@@ -8,15 +8,25 @@ import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+
+import java.util.concurrent.TimeUnit;
 
 public class AuctionService implements Runnable, AutoCloseable, DataHandler
 {
     private static final int MESSAGE_TEMPLATE_VERSION = 0;
+    private static final long IDLE_MAX_SPINS = 0;
+    private static final long IDLE_MAX_YIELDS = 0;
+    private static final long IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
+    private static final long IDLE_MAX_PARK_NS = TimeUnit.MILLISECONDS.toNanos(1);
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final AuctionDecoder auctionDecoder = new AuctionDecoder();
     private final BidDecoder bidDecoder = new BidDecoder();
     private final byte[] tmpByteArray = new byte[1024];
+    private final IdleStrategy idleStrategy =
+        new BackoffIdleStrategy(IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
 
     private final AuctionHouse house;
     private final Aeron aeron;
@@ -65,7 +75,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
 
             house.advanceTime(now);
 
-            // TODO: for exercise, add IdleStrategy
+            idleStrategy.idle(fragmentsRead);
         }
     }
 
@@ -74,7 +84,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
         // TODO: for exercise, handle data
         messageHeaderDecoder.wrap(buffer, offset, MESSAGE_TEMPLATE_VERSION);
 
-        if (messageHeaderDecoder.templateId() == auctionDecoder.sbeTemplateId())
+        if (AuctionDecoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
         {
             auctionDecoder.wrap(
                 buffer,
@@ -87,7 +97,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
 
             house.add(tmpByteArray, nameLength, now + auctionDecoder.durationInNanos(), auctionDecoder.reserve());
         }
-        else if (messageHeaderDecoder.templateId() == bidDecoder.sbeTemplateId())
+        else if (BidDecoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
         {
             bidDecoder.wrap(
                 buffer,

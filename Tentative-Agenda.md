@@ -10,13 +10,14 @@ NOTE: could do exercise 1 in 2 parts (1st = Aeron. 2nd = SBE)
 
 Exercise 1: 11-12pm
 * intro to auctions and exercises: 20 min
-* given domain model of an auction system, turn it into a service that listens on an Aeron stream for the following commands:
+* given domain model of an auction system, turn it into a service that listens on an Aeron stream
+(receiving and decoding) for the following commands:
     1. new auction
     1. bid on auction
 * SBE schemas are provided for the commands
 
 Exercise 2: 1-2pm
-* add activity feed to auction service _and_ client tool. Events are:
+* add activity feed to auction service (sending and encoding). Events are:
     1. new auction
     1. new high bid on auction
     1. auction won
@@ -25,6 +26,7 @@ Exercise 2: 1-2pm
 * break: 10 min
 
 Exercise 3: 2-3pm
+* discussion of how schema's could work (new version?, new templateIds?, deprecate?): 15 min
 * add a new type of auction to the service. A fixed amount of items. Optionally, no time limit. Fixed price.
 * new domain model including new auction type provided
 * new CLI tool provided that understands the new commands and activity feed events
