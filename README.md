@@ -60,6 +60,8 @@ Running Exercises
 Once successfully built, the Amaethon exercises can be run
 
     $ ./gradlew :basic-service:run
+    $ ./gradlew :activity-feed:run
+    $ ./gradlew :advanced-service:run
 
 Running Exercise Solutions
 --------------------------
