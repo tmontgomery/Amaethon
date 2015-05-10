@@ -18,6 +18,7 @@ public class Auction
 
     private byte[] nameInBytes = new byte[1024];
     private int nameLength;
+    private int id;
     private long expiration;
     private long currentHighBid;
     private long currentHighBidder;
@@ -28,8 +29,9 @@ public class Auction
         this.state = State.INACTIVE;
     }
 
-    public void reset(final byte[] name, final int nameLength, final long expiration, final long reserveValue)
+    public void reset(final int id, final byte[] name, final int nameLength, final long expiration, final long reserveValue)
     {
+        this.id = id;
         System.arraycopy(name, 0, this.nameInBytes, 0, name.length);
         this.nameLength = nameLength;
         this.expiration = expiration;
@@ -43,9 +45,34 @@ public class Auction
         return (State.INACTIVE == state);
     }
 
+    public boolean isActive()
+    {
+        return (State.ACTIVE == state);
+    }
+
+    public int id()
+    {
+        return id;
+    }
+
     public String name()
     {
         return new String(nameInBytes, 0, nameLength);
+    }
+
+    public byte[] nameInBytes()
+    {
+        return nameInBytes;
+    }
+
+    public int nameLength()
+    {
+        return nameLength;
+    }
+
+    public long expiration()
+    {
+        return expiration;
     }
 
     public long highBid()

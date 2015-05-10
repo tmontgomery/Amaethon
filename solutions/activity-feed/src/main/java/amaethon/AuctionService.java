@@ -1,52 +1,64 @@
 package amaethon;
 
-import amaethon.generated.AuctionDecoder;
-import amaethon.generated.BidDecoder;
-import amaethon.generated.MessageHeaderDecoder;
+import amaethon.generated.*;
 import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 public class AuctionService implements Runnable, AutoCloseable, DataHandler
 {
-    private static final int MESSAGE_TEMPLATE_VERSION = 0;
     private static final long IDLE_MAX_SPINS = 0;
     private static final long IDLE_MAX_YIELDS = 0;
     private static final long IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
     private static final long IDLE_MAX_PARK_NS = TimeUnit.MILLISECONDS.toNanos(1);
+    private static final long AUCTION_LIST_INTERVAL = TimeUnit.SECONDS.toNanos(1);
+    private static final int MESSAGE_TEMPLATE_VERSION = 0;
+    private static final int ACTIVITY_FEED_BUFFER_LENGTH = 1024;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final AuctionDecoder auctionDecoder = new AuctionDecoder();
     private final BidDecoder bidDecoder = new BidDecoder();
+    private final NewAuctionEncoder newAuctionEncoder = new NewAuctionEncoder();
+    private final NewHighBidEncoder newHighBidEncoder = new NewHighBidEncoder();
+    private final AuctionOverEncoder auctionOverEncoder = new AuctionOverEncoder();
+    private final AuctionListEncoder auctionListEncoder = new AuctionListEncoder();
+    private final UnsafeBuffer activityFeedBuffer =
+        new UnsafeBuffer(ByteBuffer.allocateDirect(ACTIVITY_FEED_BUFFER_LENGTH));
     private final byte[] tmpByteArray = new byte[1024];
     private final IdleStrategy idleStrategy =
         new BackoffIdleStrategy(IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
 
     private final AuctionHouse house;
     private final Aeron aeron;
-    private final Subscription subscription;
+    private final Subscription submissionSubscription;
+    private final Publication activityFeedPublication;
+
+    private long timeOfLastAuctionList;
 
     private volatile boolean running = true;
 
-    public AuctionService(final String submissionChannel, final int submissionStreamId)
+    public AuctionService(
+        final String submissionChannel,
+        final int submissionStreamId,
+        final String activityFeedChannel,
+        final int activityFeedStreamId)
     {
-        house = new AuctionHouse(
-            (auction) -> System.out.format("new auction: name=%s\n", auction.name()),
-            (auction) -> System.out.format(
-                "new high bid: name=%s, bidder=%d, bid=%d\n", auction.name(), auction.highBidder(), auction.highBid()),
-            (auction) -> System.out.format(
-                "auction won: name=%s, bidder=%d, bid=%d\n", auction.name(), auction.highBidder(), auction.highBid()));
+        house = new AuctionHouse(this::onNewAuction, this::onNewHighBid, this::onAuctionOver);
 
-        // TODO: for exercise, add Aeron
         aeron = Aeron.connect(new Aeron.Context());
-        // TODO: for exercise, add Subscription
-        subscription = aeron.addSubscription(submissionChannel, submissionStreamId, this::onData);
+        submissionSubscription = aeron.addSubscription(submissionChannel, submissionStreamId, this::onData);
+        // TODO: for exercise, add Publication
+        activityFeedPublication = aeron.addPublication(activityFeedChannel, activityFeedStreamId);
     }
 
     public AuctionHouse house()
@@ -61,7 +73,8 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
 
     public void close()
     {
-        subscription.close();
+        submissionSubscription.close();
+        activityFeedPublication.close();
         aeron.close();
     }
 
@@ -69,11 +82,17 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
     {
         while (running)
         {
-            // TODO: for exercise, subscription polling
-            final int fragmentsRead = subscription.poll(Integer.MAX_VALUE);
+            final int fragmentsRead = submissionSubscription.poll(Integer.MAX_VALUE);
             final long now = System.nanoTime();
 
             house.advanceTime(now);
+
+            // TODO: check time of last AuctionList and send if needed
+            if (now > (timeOfLastAuctionList + AUCTION_LIST_INTERVAL))
+            {
+                sendAuctionList();
+                timeOfLastAuctionList = now;
+            }
 
             idleStrategy.idle(fragmentsRead);
         }
@@ -81,7 +100,6 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
 
     public void onData(DirectBuffer buffer, int offset, int length, Header header)
     {
-        // TODO: for exercise, handle data
         messageHeaderDecoder.wrap(buffer, offset, MESSAGE_TEMPLATE_VERSION);
 
         if (AuctionDecoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
@@ -106,6 +124,122 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
                 MESSAGE_TEMPLATE_VERSION);
 
             house.bid(bidDecoder.auctionId(), bidDecoder.bidderId(), bidDecoder.value());
+        }
+    }
+
+    private void onNewAuction(final Auction auction)
+    {
+        // TODO: for exercise, send new auction event
+        messageHeaderEncoder.wrap(activityFeedBuffer, 0, MESSAGE_TEMPLATE_VERSION);
+
+        messageHeaderEncoder
+            .blockLength(NewAuctionEncoder.BLOCK_LENGTH)
+            .schemaId(NewAuctionEncoder.SCHEMA_ID)
+            .templateId(NewAuctionEncoder.TEMPLATE_ID)
+            .version(NewAuctionEncoder.SCHEMA_VERSION);
+
+        newAuctionEncoder.wrap(activityFeedBuffer, messageHeaderEncoder.size());
+
+        newAuctionEncoder
+            .auctionId(auction.id())
+            .duration(auction.expiration() - System.nanoTime())
+            .reserve(auction.highBid());
+
+        newAuctionEncoder.putName(auction.nameInBytes(), 0, auction.nameLength());
+
+        final int length = messageHeaderEncoder.size() + newAuctionEncoder.size();
+
+        while (activityFeedPublication.offer(activityFeedBuffer, 0, length) < 0)
+        {
+            // TODO: idle strategy
+        }
+    }
+
+    private void onNewHighBid(final Auction auction)
+    {
+        // TODO: for exercise, send new high bid event
+        messageHeaderEncoder.wrap(activityFeedBuffer, 0, MESSAGE_TEMPLATE_VERSION);
+
+        messageHeaderEncoder
+            .blockLength(NewHighBidEncoder.BLOCK_LENGTH)
+            .schemaId(NewHighBidEncoder.SCHEMA_ID)
+            .templateId(NewHighBidEncoder.TEMPLATE_ID)
+            .version(NewHighBidEncoder.SCHEMA_VERSION);
+
+        newHighBidEncoder.wrap(activityFeedBuffer, messageHeaderEncoder.size());
+
+        newHighBidEncoder
+            .auctionId(auction.id())
+            .highBidderId(auction.highBidder())
+            .highBid(auction.highBid())
+            .durationLeft(auction.expiration() - System.nanoTime());
+
+        final int length = messageHeaderEncoder.size() + newHighBidEncoder.size();
+
+        while (activityFeedPublication.offer(activityFeedBuffer, 0, length) < 0)
+        {
+            // TODO: idle strategy
+        }
+    }
+
+    private void onAuctionOver(final Auction auction)
+    {
+        // TODO: for exercise, send auction over event
+        messageHeaderEncoder.wrap(activityFeedBuffer, 0, MESSAGE_TEMPLATE_VERSION);
+
+        messageHeaderEncoder
+            .blockLength(AuctionOverEncoder.BLOCK_LENGTH)
+            .schemaId(AuctionOverEncoder.SCHEMA_ID)
+            .templateId(AuctionOverEncoder.TEMPLATE_ID)
+            .version(AuctionOverEncoder.SCHEMA_VERSION);
+
+        auctionOverEncoder.wrap(activityFeedBuffer, messageHeaderEncoder.size());
+
+        auctionOverEncoder
+            .auctionId(auction.id())
+            .winningBidderId(auction.highBidder())
+            .winningBid(auction.highBid());
+
+        final int length = messageHeaderEncoder.size() + auctionOverEncoder.size();
+
+        while (activityFeedPublication.offer(activityFeedBuffer, 0, length) < 0)
+        {
+            // TODO: idle strategy
+        }
+    }
+
+    private void sendAuctionList()
+    {
+        // TODO: for exercise, send list of auctions
+        messageHeaderEncoder.wrap(activityFeedBuffer, 0, MESSAGE_TEMPLATE_VERSION);
+
+        messageHeaderEncoder
+            .blockLength(AuctionListEncoder.BLOCK_LENGTH)
+            .schemaId(AuctionListEncoder.SCHEMA_ID)
+            .templateId(AuctionListEncoder.TEMPLATE_ID)
+            .version(AuctionListEncoder.SCHEMA_VERSION);
+
+        auctionListEncoder.wrap(activityFeedBuffer, messageHeaderEncoder.size());
+
+        final AuctionListEncoder.ActiveAuctionsEncoder activeAuctionsEncoder =
+            auctionListEncoder.activeAuctionsCount(house.activeAuctions());
+
+        // TODO: need to make this cleaner and get rid of the allocation of the lambda
+        house.forEach(
+            (auction) ->
+            {
+                activeAuctionsEncoder.next()
+                    .auctionId(auction.id())
+                    .durationLeft(auction.expiration() - System.nanoTime())
+                    .highBidderId(auction.highBidder())
+                    .highBid(auction.highBid());
+            });
+
+        final int length = messageHeaderEncoder.size() + auctionListEncoder.size();
+
+        while (activityFeedPublication.offer(activityFeedBuffer, 0, length) < 0)
+        {
+            // TODO: idle strategy
         }
     }
 }

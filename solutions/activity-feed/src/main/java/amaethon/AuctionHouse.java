@@ -19,6 +19,8 @@ public class AuctionHouse implements Model
 
     private long currentTimeInNanos;
 
+    private int activeAuctions = 0;
+
     public AuctionHouse(
             final Consumer<Auction> onNewAuction,
             final Consumer<Auction> onNewHighBid,
@@ -37,6 +39,11 @@ public class AuctionHouse implements Model
     public long currentTimeInNanos()
     {
         return this.currentTimeInNanos;
+    }
+
+    public int activeAuctions()
+    {
+        return activeAuctions;
     }
 
     public void advanceTime(final long now)
@@ -71,8 +78,9 @@ public class AuctionHouse implements Model
             auctions.add(id, new Auction());
         }
 
-        auctions.get(id).reset(name, nameLength, expiration, reserveValue);
+        auctions.get(id).reset(id, name, nameLength, expiration, reserveValue);
         onNewAuctionFunc.accept(auctions.get(id));
+        activeAuctions++;
 
         return id;
     }
@@ -83,6 +91,7 @@ public class AuctionHouse implements Model
 
         if (null != auction)
         {
+            activeAuctions--;
             auction.cancel();
         }
     }
@@ -111,7 +120,7 @@ public class AuctionHouse implements Model
         {
             final Auction auction = auctions.get(i);
 
-            if (!auction.isInactive())
+            if (auction.isActive())
             {
                 consumer.accept(auction);
             }
@@ -132,6 +141,7 @@ public class AuctionHouse implements Model
     {
         if (auction.onAdvanceTime(currentTimeInNanos) > 0)
         {
+            activeAuctions--;
             onAuctionOverFunc.accept(auction);
         }
     }
