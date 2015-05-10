@@ -15,13 +15,17 @@ public class AuctionHouse implements Model
 
     private final Consumer<Auction> onNewAuctionFunc;
     private final Consumer<Auction> onNewHighBidFunc;
+    private final Consumer<Auction> onFixedPriceUpdateFunc;
     private final Consumer<Auction> onAuctionOverFunc;
 
     private long currentTimeInNanos;
 
+    private int activeAuctions = 0;
+
     public AuctionHouse(
             final Consumer<Auction> onNewAuction,
             final Consumer<Auction> onNewHighBid,
+            final Consumer<Auction> onFixedPriceUpdate,
             final Consumer<Auction> onAuctionOver)
     {
         for (int i = INITIAL_NUMBER_OF_AUCTION_SLOTS - 1; i >= 0; i--)
@@ -31,12 +35,18 @@ public class AuctionHouse implements Model
 
         onNewAuctionFunc = onNewAuction;
         onNewHighBidFunc = onNewHighBid;
+        onFixedPriceUpdateFunc = onFixedPriceUpdate;
         onAuctionOverFunc = onAuctionOver;
     }
 
     public long currentTimeInNanos()
     {
         return this.currentTimeInNanos;
+    }
+
+    public int activeAuctions()
+    {
+        return activeAuctions;
     }
 
     public void advanceTime(final long now)
@@ -53,26 +63,22 @@ public class AuctionHouse implements Model
 
     public int add(final byte[] name, final int nameLength, final long expiration, final long reserveValue)
     {
-        int id = -1;
+        final int id = findAuctionId();
 
-        for (int i = auctions.size() - 1; i >= 0; i--)
-        {
-            final Auction auction = auctions.get(i);
-
-            if (auction.isInactive())
-            {
-                id = i;
-            }
-        }
-
-        if (-1 == id)
-        {
-            id = auctions.size();
-            auctions.add(id, new Auction());
-        }
-
-        auctions.get(id).reset(name, nameLength, expiration, reserveValue);
+        auctions.get(id).reset(id, name, nameLength, expiration, reserveValue);
         onNewAuctionFunc.accept(auctions.get(id));
+        activeAuctions++;
+
+        return id;
+    }
+
+    public int add(final byte[] name, final int nameLength, final long expiration, final long price, final int quantity)
+    {
+        final int id = findAuctionId();
+
+        auctions.get(id).reset(id, name, nameLength, expiration, price, quantity);
+        onNewAuctionFunc.accept(auctions.get(id));
+        activeAuctions++;
 
         return id;
     }
@@ -83,6 +89,7 @@ public class AuctionHouse implements Model
 
         if (null != auction)
         {
+            activeAuctions--;
             auction.cancel();
         }
     }
@@ -98,7 +105,14 @@ public class AuctionHouse implements Model
 
             if (result)
             {
-                onNewHighBidFunc.accept(auction);
+                if (auction.isFixedPrice())
+                {
+                    onFixedPriceUpdateFunc.accept(auction);
+                }
+                else
+                {
+                    onNewHighBidFunc.accept(auction);
+                }
             }
         }
 
@@ -111,7 +125,7 @@ public class AuctionHouse implements Model
         {
             final Auction auction = auctions.get(i);
 
-            if (!auction.isInactive())
+            if (auction.isActive())
             {
                 consumer.accept(auction);
             }
@@ -132,7 +146,31 @@ public class AuctionHouse implements Model
     {
         if (auction.onAdvanceTime(currentTimeInNanos) > 0)
         {
+            activeAuctions--;
             onAuctionOverFunc.accept(auction);
         }
+    }
+
+    private int findAuctionId()
+    {
+        int id = -1;
+
+        for (int i = auctions.size() - 1; i >= 0; i--)
+        {
+            final Auction auction = auctions.get(i);
+
+            if (auction.isInactive())
+            {
+                id = i;
+            }
+        }
+
+        if (-1 == id)
+        {
+            id = auctions.size();
+            auctions.add(id, new Auction());
+        }
+
+        return id;
     }
 }
