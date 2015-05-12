@@ -25,10 +25,9 @@ Exercise 2: 1-2pm
 
 Exercise 3: 2-3pm
 * discussion of how schema's could work (new version?, new templateIds?, deprecate?): 15 min
-* add a new type of auction to the service. A fixed amount of items. Optionally, no time limit. Fixed price.
+* add a new type of auction to the service. A fixed amount of items.
 * new domain model including new auction type provided
-* new CLI tool provided that understands the new commands and activity feed events
 * SBE schemas updated for commands and activity feed events
 * break: 10 min
 
-Exercise 4: 3-4pm (If we haev time and the WiFi cooperates!)
+Exercise 4: 3-4pm (If we have time and the WiFi cooperates!)
