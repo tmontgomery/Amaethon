@@ -47,8 +47,8 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
         new BackoffIdleStrategy(IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
 
     private final AuctionHouse house;
-    private final Aeron aeron;
-    private final Subscription subscription;
+    private Aeron aeron;
+    private Subscription subscription;
 
     private volatile boolean running = true;
 
@@ -61,10 +61,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
             (auction) -> System.out.format(
                 "auction won: name=%s, bidder=%d, bid=%d\n", auction.name(), auction.highBidder(), auction.highBid()));
 
-        // TODO: for exercise, add Aeron
-        aeron = Aeron.connect(new Aeron.Context());
-        // TODO: for exercise, add Subscription
-        subscription = aeron.addSubscription(submissionChannel, submissionStreamId, this::onData);
+        // TODO:
     }
 
     public AuctionHouse house()
@@ -87,8 +84,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
     {
         while (running)
         {
-            // TODO: for exercise, subscription polling
-            final int fragmentsRead = subscription.poll(Integer.MAX_VALUE);
+            final int fragmentsRead = 0;  // TODO:
             final long now = System.nanoTime();
 
             house.advanceTime(now);
@@ -100,30 +96,5 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
     public void onData(DirectBuffer buffer, int offset, int length, Header header)
     {
         // TODO: for exercise, handle data
-        messageHeaderDecoder.wrap(buffer, offset, MESSAGE_TEMPLATE_VERSION);
-
-        if (AuctionDecoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
-        {
-            auctionDecoder.wrap(
-                buffer,
-                offset + messageHeaderDecoder.size(),
-                messageHeaderDecoder.blockLength(),
-                MESSAGE_TEMPLATE_VERSION);
-
-            final long now = System.nanoTime();
-            final int nameLength = auctionDecoder.getName(tmpByteArray, 0, tmpByteArray.length);
-
-            house.add(tmpByteArray, nameLength, now + auctionDecoder.durationInNanos(), auctionDecoder.reserve());
-        }
-        else if (BidDecoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
-        {
-            bidDecoder.wrap(
-                buffer,
-                offset + messageHeaderDecoder.size(),
-                messageHeaderDecoder.blockLength(),
-                MESSAGE_TEMPLATE_VERSION);
-
-            house.bid(bidDecoder.auctionId(), bidDecoder.bidderId(), bidDecoder.value());
-        }
     }
 }
