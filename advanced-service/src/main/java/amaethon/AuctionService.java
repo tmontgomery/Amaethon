@@ -77,7 +77,6 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
 
         aeron = Aeron.connect(new Aeron.Context());
         submissionSubscription = aeron.addSubscription(submissionChannel, submissionStreamId, this::onData);
-        // TODO: for exercise, add Publication
         activityFeedPublication = aeron.addPublication(activityFeedChannel, activityFeedStreamId);
     }
 
@@ -107,7 +106,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
 
             house.advanceTime(now);
 
-            // TODO: check time of last AuctionList and send if needed
+            // check time of last AuctionList and send if needed
             if (now > (timeOfLastAuctionList + AUCTION_LIST_INTERVAL))
             {
                 sendAuctionList();
@@ -137,22 +136,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
         }
         else if (FixedPriceAuctionDecoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
         {
-            // TODO: for exercise, decode fp auction
-            fixedPriceAuctionDecoder.wrap(
-                buffer,
-                offset + messageHeaderDecoder.size(),
-                messageHeaderDecoder.blockLength(),
-                MESSAGE_TEMPLATE_VERSION);
-
-            final long now = System.nanoTime();
-            final int nameLength = fixedPriceAuctionDecoder.getName(tmpByteArray, 0, tmpByteArray.length);
-
-            house.add(
-                tmpByteArray,
-                nameLength,
-                now + fixedPriceAuctionDecoder.durationInNanos(),
-                fixedPriceAuctionDecoder.price(),
-                fixedPriceAuctionDecoder.quantity());
+            // TODO
         }
         else if (BidDecoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
         {
@@ -168,7 +152,6 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
 
     private void onNewAuction(final Auction auction)
     {
-        // TODO: for exercise, send new auction event
         messageHeaderEncoder.wrap(activityFeedBuffer, 0, MESSAGE_TEMPLATE_VERSION);
 
         messageHeaderEncoder
@@ -179,28 +162,18 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
 
         newAuctionEncoder.wrap(activityFeedBuffer, messageHeaderEncoder.size());
 
-        final AuctionType auctionType = auction.isFixedPrice() ? AuctionType.FixedPrice : AuctionType.Basic;
-
-        newAuctionEncoder
-            .auctionId(auction.id())
-            .duration(auction.expiration() - System.nanoTime())
-            .reserveOrPrice(auction.highBid())
-            .quantity(auction.quantity())
-            .auctionType(auctionType);
-
-        newAuctionEncoder.putName(auction.nameInBytes(), 0, auction.nameLength());
+        // TODO
 
         final int length = messageHeaderEncoder.size() + newAuctionEncoder.size();
 
         while (activityFeedPublication.offer(activityFeedBuffer, 0, length) < 0)
         {
-            // TODO: idle strategy
+            // idle strategy
         }
     }
 
     private void onNewHighBid(final Auction auction)
     {
-        // TODO: for exercise, send new high bid event
         messageHeaderEncoder.wrap(activityFeedBuffer, 0, MESSAGE_TEMPLATE_VERSION);
 
         messageHeaderEncoder
@@ -221,40 +194,17 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
 
         while (activityFeedPublication.offer(activityFeedBuffer, 0, length) < 0)
         {
-            // TODO: idle strategy
+            // idle strategy
         }
     }
 
     private void onFixedPriceUpdate(final Auction auction)
     {
-        // TODO: for exercise, send fixed price auction update
-        messageHeaderEncoder.wrap(activityFeedBuffer, 0, MESSAGE_TEMPLATE_VERSION);
-
-        messageHeaderEncoder
-            .blockLength(FixedPriceAuctionUpdateEncoder.BLOCK_LENGTH)
-            .schemaId(FixedPriceAuctionUpdateEncoder.SCHEMA_ID)
-            .templateId(FixedPriceAuctionUpdateEncoder.TEMPLATE_ID)
-            .version(FixedPriceAuctionUpdateEncoder.SCHEMA_VERSION);
-
-        fixedPriceAuctionUpdateEncoder.wrap(activityFeedBuffer, messageHeaderEncoder.size());
-
-        fixedPriceAuctionUpdateEncoder
-            .auctionId(auction.id())
-            .bidderId(auction.highBidder())
-            .durationLeft(auction.expiration() - System.nanoTime())
-            .quantityLeft(auction.quantity());
-
-        final int length = messageHeaderEncoder.size() + fixedPriceAuctionUpdateEncoder.size();
-
-        while (activityFeedPublication.offer(activityFeedBuffer, 0, length) < 0)
-        {
-            // TODO: idle strategy
-        }
+        // TODO
     }
 
     private void onAuctionOver(final Auction auction)
     {
-        // TODO: for exercise, send auction over event
         messageHeaderEncoder.wrap(activityFeedBuffer, 0, MESSAGE_TEMPLATE_VERSION);
 
         messageHeaderEncoder
@@ -265,23 +215,18 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
 
         auctionOverEncoder.wrap(activityFeedBuffer, messageHeaderEncoder.size());
 
-        auctionOverEncoder
-            .auctionId(auction.id())
-            .winningBidderId(auction.highBidder())
-            .winningBid(auction.highBid())
-            .quantityLeft(auction.quantity());
+        // TODO
 
         final int length = messageHeaderEncoder.size() + auctionOverEncoder.size();
 
         while (activityFeedPublication.offer(activityFeedBuffer, 0, length) < 0)
         {
-            // TODO: idle strategy
+            // idle strategy
         }
     }
 
     private void sendAuctionList()
     {
-        // TODO: for exercise, send list of auctions
         messageHeaderEncoder.wrap(activityFeedBuffer, 0, MESSAGE_TEMPLATE_VERSION);
 
         messageHeaderEncoder
@@ -295,23 +240,17 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
         final AuctionListEncoder.ActiveAuctionsEncoder activeAuctionsEncoder =
             auctionListEncoder.activeAuctionsCount(house.activeAuctions());
 
-        // TODO: need to make this cleaner and get rid of the allocation of the lambda
         house.forEach(
             (auction) ->
             {
-                activeAuctionsEncoder.next()
-                    .auctionId(auction.id())
-                    .durationLeft(auction.expiration() - System.nanoTime())
-                    .highBidderId(auction.highBidder())
-                    .highBid(auction.highBid())
-                    .quantityLeft(auction.quantity());
+                // TODO
             });
 
         final int length = messageHeaderEncoder.size() + auctionListEncoder.size();
 
         while (activityFeedPublication.offer(activityFeedBuffer, 0, length) < 0)
         {
-            // TODO: idle strategy
+            // idle strategy
         }
     }
 }
