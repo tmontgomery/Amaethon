@@ -23,10 +23,6 @@ Advanced Service (Exercise 3)
 
     advanced-service
 
-Auction-Free-4-All (Exercise 4)
-
-    auction-client
-
 Solutions
 
     solutions

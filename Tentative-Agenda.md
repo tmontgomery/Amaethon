@@ -6,8 +6,6 @@ Intro to SBE: 9-10am
 Intro to Aeron: 10-11am
 * Break: 10 min
 
-NOTE: could do exercise 1 in 2 parts (1st = Aeron. 2nd = SBE)
-
 Exercise 1: 11-12pm
 * intro to auctions and exercises: 20 min
 * given domain model of an auction system, turn it into a service that listens on an Aeron stream
@@ -33,8 +31,4 @@ Exercise 3: 2-3pm
 * SBE schemas updated for commands and activity feed events
 * break: 10 min
 
-Exercise 4: 3-4pm
-* auction free-for-all!
-* set up server with completed auction service in it for entire workshop to use (LAN preferred, but could be AWS)
-* each participant has a fixed budget for all items. Service will track budgets.
-* 3 auctions. 1 at a time. 10 minutes each. (Give 30 min to work before starting)
+Exercise 4: 3-4pm (If we haev time and the WiFi cooperates!)
