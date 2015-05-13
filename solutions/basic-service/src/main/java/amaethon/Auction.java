@@ -33,7 +33,7 @@ public class Auction
      */
     enum State
     {
-        INACTIVE, ACTIVE, OVER;
+        INACTIVE, ACTIVE, OVER
     }
 
     private byte[] nameInBytes = new byte[1024];

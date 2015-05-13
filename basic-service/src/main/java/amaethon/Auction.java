@@ -33,14 +33,14 @@ public class Auction
      */
     enum State
     {
-        INACTIVE, ACTIVE, OVER;
+        INACTIVE, ACTIVE, OVER
     }
 
     private byte[] nameInBytes = new byte[1024];
     private int nameLength;
     private long expiration;
     private long currentHighBid;
-    private long currentHighBidder;
+    private long currentHighBidderId;
     private State state;
 
     public Auction()
@@ -54,7 +54,7 @@ public class Auction
         this.nameLength = nameLength;
         this.expiration = expiration;
         this.currentHighBid = reserveValue;
-        this.currentHighBidder = Bidder.INVALID_BIDDER;
+        this.currentHighBidderId = Bidder.INVALID_BIDDER;
         this.state = State.ACTIVE;
     }
 
@@ -75,7 +75,7 @@ public class Auction
 
     public long highBidder()
     {
-        return currentHighBidder;
+        return currentHighBidderId;
     }
 
     // return 0 for nothing new or >0 for activity
@@ -97,14 +97,14 @@ public class Auction
     }
 
     // True if high bid. False if not.
-    public boolean bid(final long bidder, final long value)
+    public boolean bid(final long bidderId, final long value)
     {
         boolean result = false;
 
         if (State.ACTIVE == state && value > currentHighBid)
         {
             currentHighBid = value;
-            currentHighBidder = bidder;
+            currentHighBidderId = bidderId;
             result = true;
         }
 
@@ -113,7 +113,7 @@ public class Auction
 
     public void cancel()
     {
-        this.currentHighBidder = Bidder.INVALID_BIDDER;
+        this.currentHighBidderId = Bidder.INVALID_BIDDER;
         this.state = State.OVER;
     }
 }

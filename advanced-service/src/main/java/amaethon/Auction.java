@@ -33,12 +33,12 @@ public class Auction
      */
     enum State
     {
-        INACTIVE, ACTIVE, OVER;
+        INACTIVE, ACTIVE, OVER
     }
 
     enum Type
     {
-        BASIC, FIXED_PRICE;
+        BASIC, FIXED_PRICE
     }
 
     private byte[] nameInBytes = new byte[1024];
@@ -47,7 +47,7 @@ public class Auction
     private int quantity;
     private long expiration;
     private long currentHighBid;
-    private long currentHighBidder;
+    private long currentHighBidderId;
     private State state;
     private Type type;
 
@@ -64,7 +64,7 @@ public class Auction
         this.nameLength = nameLength;
         this.expiration = expiration;
         this.currentHighBid = reserveValue;
-        this.currentHighBidder = Bidder.INVALID_BIDDER;
+        this.currentHighBidderId = Bidder.INVALID_BIDDER;
         this.state = State.ACTIVE;
         this.type = Type.BASIC;
         this.quantity = 1;
@@ -78,7 +78,7 @@ public class Auction
         this.nameLength = nameLength;
         this.expiration = expiration;
         this.currentHighBid = price;
-        this.currentHighBidder = Bidder.INVALID_BIDDER;
+        this.currentHighBidderId = Bidder.INVALID_BIDDER;
         this.state = State.ACTIVE;
         this.type = Type.FIXED_PRICE;
         this.quantity = quantity;
@@ -126,7 +126,7 @@ public class Auction
 
     public long highBidder()
     {
-        return currentHighBidder;
+        return currentHighBidderId;
     }
 
     public boolean isFixedPrice()
@@ -163,20 +163,20 @@ public class Auction
     }
 
     // True if high bid or successful fixed price bid. False if not.
-    public boolean bid(final long bidder, final long value)
+    public boolean bid(final long bidderId, final long value)
     {
         boolean result = false;
 
         if (Type.BASIC == type && State.ACTIVE == state && value > currentHighBid)
         {
             currentHighBid = value;
-            currentHighBidder = bidder;
+            currentHighBidderId = bidderId;
             result = true;
         }
         else if (Type.FIXED_PRICE == type && State.ACTIVE == state && currentHighBid == value && 0 < quantity)
         {
             quantity--;
-            currentHighBidder = bidder;
+            currentHighBidderId = bidderId;
             result = true;
         }
 
@@ -185,7 +185,7 @@ public class Auction
 
     public void cancel()
     {
-        this.currentHighBidder = Bidder.INVALID_BIDDER;
+        this.currentHighBidderId = Bidder.INVALID_BIDDER;
         this.state = State.OVER;
     }
 }

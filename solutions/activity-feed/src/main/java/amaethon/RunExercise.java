@@ -44,8 +44,8 @@ public class RunExercise
         serviceThread.setName("AuctionService");
         serviceThread.start();
 
-        try (final AutomatedClient client =
-                 new AutomatedClient(SUBMISSION_CHANNEL, SUBMISSION_STREAM_ID, ACTIVITY_FEED_CHANNEL, ACTIVITY_FEED_STREAM_ID))
+        try (final AutomatedClient client = new AutomatedClient(
+                SUBMISSION_CHANNEL, SUBMISSION_STREAM_ID, ACTIVITY_FEED_CHANNEL, ACTIVITY_FEED_STREAM_ID))
         {
             house.addBidder("tmontgomery".getBytes(), 1, 0);
             house.addBidder("mjpt777".getBytes(), 2, 0);

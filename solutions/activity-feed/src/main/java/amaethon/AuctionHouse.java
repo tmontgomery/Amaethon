@@ -43,9 +43,9 @@ public class AuctionHouse implements Model
     private int activeAuctions = 0;
 
     public AuctionHouse(
-            final Consumer<Auction> onNewAuction,
-            final Consumer<Auction> onNewHighBid,
-            final Consumer<Auction> onAuctionOver)
+        final Consumer<Auction> onNewAuction,
+        final Consumer<Auction> onNewHighBid,
+        final Consumer<Auction> onAuctionOver)
     {
         for (int i = INITIAL_NUMBER_OF_AUCTION_SLOTS - 1; i >= 0; i--)
         {
