@@ -21,8 +21,8 @@ import amaethon.generated.*;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.DirectBuffer;
 
@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
  *
  * NOTE: not thread safe.
  */
-public class AutomatedClient implements AutoCloseable, DataHandler
+public class AutomatedClient implements AutoCloseable, FragmentHandler
 {
     public static final int MAX_BUFFER_LENGTH = 1024;
     public static final int MESSAGE_TEMPLATE_VERSION = 0;
@@ -63,7 +63,7 @@ public class AutomatedClient implements AutoCloseable, DataHandler
     {
         aeron = Aeron.connect(new Aeron.Context());
         submissionPublication = aeron.addPublication(submissionChannel, submissionStreamId);
-        activityFeedSubscription = aeron.addSubscription(activityFeedChannel, activityFeedStreamId, this::onData);
+        activityFeedSubscription = aeron.addSubscription(activityFeedChannel, activityFeedStreamId);
     }
 
     public void close()
@@ -147,10 +147,10 @@ public class AutomatedClient implements AutoCloseable, DataHandler
 
     public int pollActivityFeed()
     {
-        return activityFeedSubscription.poll(1);
+        return activityFeedSubscription.poll(this, 1);
     }
 
-    public void onData(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset, MESSAGE_TEMPLATE_VERSION);
 

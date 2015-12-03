@@ -35,7 +35,7 @@ public class RunExercise
     public static void main(final String[] args) throws Exception
     {
         final MediaDriver.Context ctx = new MediaDriver.Context();
-        final MediaDriver mediaDriver = MediaDriver.launch(ctx.dirsDeleteOnExit(true));
+        final MediaDriver mediaDriver = MediaDriver.launch(ctx.dirsDeleteOnStart(true));
         final AuctionService service =
             new AuctionService(SUBMISSION_CHANNEL, SUBMISSION_STREAM_ID, ACTIVITY_FEED_CHANNEL, ACTIVITY_FEED_STREAM_ID);
         final Thread serviceThread = new Thread(service);

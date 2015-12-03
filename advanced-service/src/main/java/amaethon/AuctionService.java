@@ -21,8 +21,8 @@ import amaethon.generated.*;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
@@ -32,7 +32,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
-public class AuctionService implements Runnable, AutoCloseable, DataHandler
+public class AuctionService implements Runnable, AutoCloseable, FragmentHandler
 {
     private static final long IDLE_MAX_SPINS = 0;
     private static final long IDLE_MAX_YIELDS = 0;
@@ -76,7 +76,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
         house = new AuctionHouse(this::onNewAuction, this::onNewHighBid, this::onFixedPriceUpdate, this::onAuctionOver);
 
         aeron = Aeron.connect(new Aeron.Context());
-        submissionSubscription = aeron.addSubscription(submissionChannel, submissionStreamId, this::onData);
+        submissionSubscription = aeron.addSubscription(submissionChannel, submissionStreamId);
         activityFeedPublication = aeron.addPublication(activityFeedChannel, activityFeedStreamId);
     }
 
@@ -101,7 +101,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
     {
         while (running)
         {
-            final int fragmentsRead = submissionSubscription.poll(Integer.MAX_VALUE);
+            final int fragmentsRead = submissionSubscription.poll(this, Integer.MAX_VALUE);
             final long now = System.nanoTime();
 
             house.advanceTime(now);
@@ -117,7 +117,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
         }
     }
 
-    public void onData(DirectBuffer buffer, int offset, int length, Header header)
+    public void onFragment(DirectBuffer buffer, int offset, int length, Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset, MESSAGE_TEMPLATE_VERSION);
 

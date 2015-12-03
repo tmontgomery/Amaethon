@@ -22,8 +22,8 @@ import amaethon.generated.BidDecoder;
 import amaethon.generated.MessageHeaderDecoder;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
@@ -31,7 +31,7 @@ import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
 import java.util.concurrent.TimeUnit;
 
-public class AuctionService implements Runnable, AutoCloseable, DataHandler
+public class AuctionService implements Runnable, AutoCloseable, FragmentHandler
 {
     private static final int MESSAGE_TEMPLATE_VERSION = 0;
     private static final long IDLE_MAX_SPINS = 0;
@@ -64,7 +64,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
         // TODO: for exercise, add Aeron
         aeron = Aeron.connect(new Aeron.Context());
         // TODO: for exercise, add Subscription
-        subscription = aeron.addSubscription(submissionChannel, submissionStreamId, this::onData);
+        subscription = aeron.addSubscription(submissionChannel, submissionStreamId);
     }
 
     public AuctionHouse house()
@@ -88,7 +88,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
         while (running)
         {
             // TODO: for exercise, subscription polling
-            final int fragmentsRead = subscription.poll(Integer.MAX_VALUE);
+            final int fragmentsRead = subscription.poll(this, Integer.MAX_VALUE);
             final long now = System.nanoTime();
 
             house.advanceTime(now);
@@ -97,7 +97,7 @@ public class AuctionService implements Runnable, AutoCloseable, DataHandler
         }
     }
 
-    public void onData(DirectBuffer buffer, int offset, int length, Header header)
+    public void onFragment(DirectBuffer buffer, int offset, int length, Header header)
     {
         // TODO: for exercise, handle data
         messageHeaderDecoder.wrap(buffer, offset, MESSAGE_TEMPLATE_VERSION);
